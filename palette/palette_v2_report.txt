@@ -1,0 +1,14 @@
+
+===== PALETTE V2 REPORT =====
+
+Kolory referencyjne: 8
+Kolory z klasteryzacji: 248
+
+Próbki wejściowe: 3,414,701
+Po filtracji: 3,055,778
+
+Zakres L*:
+  min=0.00
+  max=100.00
+
+=================================

@@ -205,3 +205,20 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+
+## lokalne
+# Ignore analysis directory
+analysis/
+
+# Ignore all maps_* directories
+maps_*/
+
+# BUT keep the directory maps_raw itself
+!maps_raw/
+
+# Ignore everything inside maps_raw
+maps_raw/*
+
+# BUT allow keeping placeholder file
+!maps_raw/.gitkeep

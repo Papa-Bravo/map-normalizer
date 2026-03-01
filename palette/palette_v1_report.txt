@@ -1,0 +1,19 @@
+
+===== PALETTE BUILD REPORT =====
+
+K (liczba kolorów): 256
+Liczba próbek wejściowych: 3,414,701
+
+Zakres L*:
+  min=27.97
+  max=98.85
+
+Zakres a*:
+  min=-25.09
+  max=51.96
+
+Zakres b*:
+  min=-39.22
+  max=45.97
+
+=================================
