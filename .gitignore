@@ -32,6 +32,8 @@ palette/*.npy
 palette/*.csv
 palette/*.png
 maps_indexed/
+maps_raw/*
+!maps_raw/.gitkeep
 
 # OS specific
 .DS_Store
