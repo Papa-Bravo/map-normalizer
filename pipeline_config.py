@@ -94,11 +94,44 @@ MAJORITY_MIN_VOTES  = 6    # min. sąsiadów z dominującym indeksem
 
 # ── ETAP 06/07 – Walidacja jakości (Priorytetyzacja BSB/KAP) ───────────────────
 
-# Kategoria: STRUKTURALNA (CRITICAL - bezpieczeństwo nawigacyjne)
-MIN_SSIM          = 0.90   # SSIM (0–1) - ogólna czytelność
-MIN_EDGE_IOU      = 0.80   # Pokrycie krawędzi (detale, napisy)
-MIN_GRAD_CORR     = 0.90   # Wierność przejść i symboli
-MAX_EDGE_DIST_PX  = 1.0    # Maks. przesunięcie krawędzi [px]
+# Profile jakości (STRICT / NORMAL)
+QUALITY_PROFILE = "NORMAL"
+
+QUALITY_PROFILES = {
+    "STRICT": {
+        "MIN_SSIM": 0.95,
+        "MIN_EDGE_IOU": 0.85,
+        "MIN_GRAD_CORR": 0.95,
+        "MAX_EDGE_DIST_PX": 0.5,
+        "MAX_LOST_EDGE_RATIO": 8.0,
+        "MAX_NEW_EDGE_RATIO": 10.0,
+    },
+    "NORMAL": {
+        "MIN_SSIM": 0.90,
+        "MIN_EDGE_IOU": 0.80,
+        "MIN_GRAD_CORR": 0.90,
+        "MAX_EDGE_DIST_PX": 1.0,
+        "MAX_LOST_EDGE_RATIO": 12.0,
+        "MAX_NEW_EDGE_RATIO": 18.0,
+    }
+}
+
+# Aktywne progi (wybierane na podstawie QUALITY_PROFILE)
+_p = QUALITY_PROFILES[QUALITY_PROFILE]
+
+MIN_SSIM             = _p["MIN_SSIM"]
+MIN_EDGE_IOU         = _p["MIN_EDGE_IOU"]
+MIN_GRAD_CORR        = _p["MIN_GRAD_CORR"]
+MAX_EDGE_DIST_PX     = _p["MAX_EDGE_DIST_PX"]
+MAX_LOST_EDGE_RATIO  = _p["MAX_LOST_EDGE_RATIO"]
+MAX_NEW_EDGE_RATIO   = _p["MAX_NEW_EDGE_RATIO"]
+
+# Parametry Canny (stałe dla wszystkich profili dla porównywalności)
+EDGE_CANNY_LOW    = 100    # Próg niski dla detekcji krawędzi (0-255)
+EDGE_CANNY_HIGH   = 200    # Próg wysoki dla detekcji krawędzi (0-255)
+
+# Opcja generowania mapy różnic krawędzi podczas walidacji
+GENERATE_EDGE_DIFF_ON_VALIDATE = True
 
 # Kategoria: KOLORYSTYCZNA (WARNING - spójność wizualna katalogu)
 MAX_MEAN_DE       = 2.0    # Średni błąd ΔE (jeśli > to ostrzeżenie)

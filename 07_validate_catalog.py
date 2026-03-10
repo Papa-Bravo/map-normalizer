@@ -82,7 +82,7 @@ report_path = cfg.OUTPUT_DIR / "validation_report.csv"
 fieldnames = [
     "file", "status",
     "mean_de", "max_de", "pct_gt10", "color_ok",
-    "ssim", "edge_iou", "grad_corr", "edge_dist", "struct_ok",
+    "ssim", "edge_iou", "grad_corr", "edge_dist", "lost_edge_pct", "new_edge_pct", "struct_ok",
     "norm_ok", "max_norm_de", "pass"
 ]
 

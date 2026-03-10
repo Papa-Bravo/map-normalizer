@@ -125,6 +125,42 @@ def compute_delta_e(orig_rgb: np.ndarray, proc_rgb: np.ndarray):
     )
 
 
+def compute_edge_diff_metrics(orig_rgb: np.ndarray, proc_rgb: np.ndarray, 
+                             output_diff_path: Path = None):
+    """
+    Oblicza statystyki różnic krawędzi i opcjonalnie zapisuje mapę wizualną.
+    """
+    g_orig = _to_gray(orig_rgb)
+    g_proc = _to_gray(proc_rgb)
+
+    low = cfg.EDGE_CANNY_LOW / 255.0
+    high = cfg.EDGE_CANNY_HIGH / 255.0
+
+    e_orig = canny(g_orig, low_threshold=low, high_threshold=high)
+    e_proc = canny(g_proc, low_threshold=low, high_threshold=high)
+
+    lost   = e_orig & ~e_proc
+    new    = e_proc & ~e_orig
+    common = e_orig & e_proc
+
+    n_orig = int(np.sum(e_orig))
+    n_lost = int(np.sum(lost))
+    n_new  = int(np.sum(new))
+
+    lost_ratio = (100.0 * n_lost / n_orig) if n_orig > 0 else 0.0
+    new_ratio  = (100.0 * n_new / n_orig) if n_orig > 0 else 0.0
+
+    if output_diff_path and cfg.GENERATE_EDGE_DIFF_ON_VALIDATE:
+        h, w = g_orig.shape
+        vis = np.zeros((h, w, 3), dtype=np.uint8)
+        vis[common] = [255, 255, 255] # Biały = zachowane
+        vis[lost]   = [255, 0, 0]     # Czerwony = utracone
+        vis[new]    = [0, 0, 255]     # Niebieski = nowe
+        Image.fromarray(vis).save(output_diff_path)
+
+    return lost_ratio, new_ratio
+
+
 def validate_normative_colors(proc_path: Path):
     """
     Sprawdza czy kolory normatywne w przetworzonym pliku 
@@ -189,13 +225,22 @@ def validate_single(orig_path: Path, proc_path: Path) -> dict:
         max_norm_de = float(np.max(norm_de))
         norm_ok = max_norm_de <= cfg.MAX_NORMATIVE_DE
 
+    # ── Metryki Edge Diff ─────────────────────────────────────────────────────
+    diff_path = None
+    if cfg.GENERATE_EDGE_DIFF_ON_VALIDATE:
+        diff_path = proc_path.parent / f"{orig_path.stem}_diff_map.png"
+    
+    lost_ratio, new_ratio = compute_edge_diff_metrics(orig_rgb, proc_rgb, diff_path)
+
     # ── Ocena PASS/FAIL/WARNING ───────────────────────────────────────────────
     # STRUKTURA = CRITICAL
     struct_ok = (
         ssim_score >= cfg.MIN_SSIM and
         edge_iou   >= cfg.MIN_EDGE_IOU and
         grad_corr  >= cfg.MIN_GRAD_CORR and
-        mean_d     <= cfg.MAX_EDGE_DIST_PX
+        mean_d     <= cfg.MAX_EDGE_DIST_PX and
+        lost_ratio <= cfg.MAX_LOST_EDGE_RATIO and
+        new_ratio  <= cfg.MAX_NEW_EDGE_RATIO
     )
     
     # KOLOR (ogólny) = WARNING
@@ -224,6 +269,8 @@ def validate_single(orig_path: Path, proc_path: Path) -> dict:
         "struct_ok":   struct_ok,
         "norm_ok":     norm_ok,
         "max_norm_de": max_norm_de,
+        "lost_edge_pct": lost_ratio,
+        "new_edge_pct":  new_ratio,
         "status":      global_status,
         "pass":        not is_fail, # TRUE dla PASS i WARNING
     }
@@ -238,6 +285,7 @@ def print_report(r: dict):
         return "\033[91mFAIL\033[0m"
 
     print(f"\n===== WALIDACJA: {r['file']} =====")
+    print(f"  Profil jakości     : {cfg.QUALITY_PROFILE}")
     
     print("\n── 1. STRUKTURALNA (CRITICAL - detale) ───────────────")
     print(f"  SSIM               : {r['ssim']:.4f}  (próg ≥ {cfg.MIN_SSIM})   {mark(r['ssim'] >= cfg.MIN_SSIM)}")
@@ -245,6 +293,8 @@ def print_report(r: dict):
     print(f"  Gradient corr      : {r['grad_corr']:.4f}  (próg ≥ {cfg.MIN_GRAD_CORR})   {mark(r['grad_corr'] >= cfg.MIN_GRAD_CORR)}")
     print(f"  Edge dist [px]     : {r['edge_dist']:.3f}   (próg ≤ {cfg.MAX_EDGE_DIST_PX} px)   {mark(r['edge_dist'] <= cfg.MAX_EDGE_DIST_PX)}")
     print(f"  Kraw. w 2px        : {r['edge_within2']*100:.1f}%")
+    print(f"  Lost Edge Ratio    : {r['lost_edge_pct']:.2f}%  (próg ≤ {cfg.MAX_LOST_EDGE_RATIO}%)  {mark(r['lost_edge_pct'] <= cfg.MAX_LOST_EDGE_RATIO)}")
+    print(f"  New Edge Ratio     : {r['new_edge_pct']:.2f}%  (próg ≤ {cfg.MAX_NEW_EDGE_RATIO}%)  {mark(r['new_edge_pct'] <= cfg.MAX_NEW_EDGE_RATIO)}")
     print(f"  Wynik struktury    : {'PASS' if r['struct_ok'] else 'FAIL'}")
 
     print("\n── 2. NORMATYWNA (CRITICAL - semantyka) ──────────────")
